@@ -48,6 +48,10 @@ void append(int id, int arrival, int length, int tickets){
   tmp->arrival = arrival;
   tmp->tickets = tickets;
 
+  tmp->executionStarted = -1;
+  tmp->executionEnded = -1;
+  tmp->executionTimeRemaining = length;
+
   // the new job is the last job
   tmp->next = NULL;
 
@@ -109,24 +113,34 @@ int findNextJobsTime(){
   struct job * jobIterator = head;
   int nextJobsTime = -1;
 
-  // Scan through the list and find the shortest job that is already available.
+  // Scan through the list and find the the next job's arrival time.
   while(jobIterator != NULL){
     if(jobIterator->executionStarted == -1){ //I.e., job hasn't been scheduled yet.
-
-      if(nextJobsTime == -1) // Anything will do to begin with.
-        nextJobsTime = jobIterator->arrival;
-      else if(jobIterator->arrival < nextJobsTime) // If a shorter job is found.
-        nextJobsTime = jobIterator->arrival;
+      nextJobsTime = jobIterator->arrival;
+      break;
     }
-
     jobIterator = jobIterator->next;
   }
 
   return nextJobsTime;
 }
 
+/*Finds the job that has shortest time to completion from available, incomplete jobs. */
+struct job * findShortestJobToCompletion(int timeLimit){
+  struct job * jobIterator = head;
+  struct job * STTCJob = NULL;
+
+  while(jobIterator != NULL){
+
+
+    jobIterator = jobIterator->next;
+  }
+
+  return STTCJob;
+}
+
 void policy_STCF(struct job *head, int slice) {
-  // TODO: Fill this in
+  
 
   return;
 }
