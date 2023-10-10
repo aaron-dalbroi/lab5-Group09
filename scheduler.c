@@ -209,7 +209,7 @@ int main(int argc, char **argv) {
   // the start of a linked-list of jobs, i.e., the job list 
   read_workload_file(workload);
 
-  if (strcmp(policy, "STCF") == 0  || strcmp(policy, "stct")) {
+  if (strcmp(policy, "STCF") == 0  || strcmp(policy, "stct") == 0) {
     policy_STCF(head, slice);
     if (analysis) {
       printf("Begin analyzing STCF:\n");
@@ -219,7 +219,7 @@ int main(int argc, char **argv) {
     exit(EXIT_SUCCESS);
   }
 
-  if (strcmp(policy, "RR") == 0  || strcmp(policy, "rr")) {
+  if (strcmp(policy, "RR") == 0  || strcmp(policy, "rr") == 0) {
     policy_RR(head, slice);
     if (analysis) {
       printf("Begin analyzing RR:\n");
@@ -229,7 +229,7 @@ int main(int argc, char **argv) {
     exit(EXIT_SUCCESS);
   }
 
-  if (strcmp(policy, "LT") == 0  || strcmp(policy, "lt")) {
+  if (strcmp(policy, "LT") == 0  || strcmp(policy, "lt") == 0) {
     policy_RR(head, slice);
     if (analysis) {
       printf("Begin analyzing LT:\n");
