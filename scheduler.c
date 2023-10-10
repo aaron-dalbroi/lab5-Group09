@@ -108,14 +108,15 @@ void read_workload_file(char* filename) {
   return;
 }
 
-/*To be used when no jobs are available at current time. Finds the next job's arrival.*/
+/*To be used when no jobs are available at current time. Finds the next job's arrival.
+  Returns the arrival time of the next arrivin job and -1 if no jobs are left.*/
 int findNextJobsTime(){
   struct job * jobIterator = head;
   int nextJobsTime = -1;
 
   // Scan through the list and find the the next job's arrival time.
   while(jobIterator != NULL){
-    if(jobIterator->executionStarted == -1){ //I.e., job hasn't been scheduled yet.
+    if(jobIterator->executionTimeRemaining > 0){ //I.e., job hasn't been completed yet.
       nextJobsTime = jobIterator->arrival;
       break;
     }
@@ -125,13 +126,21 @@ int findNextJobsTime(){
   return nextJobsTime;
 }
 
-/*Finds the job that has shortest time to completion from available, incomplete jobs. */
+/*Finds the job that has shortest time to completion from available, incomplete jobs.
+  Returns the pointer to the shortest job or NULL, if no jobs are available.*/
 struct job * findShortestJobToCompletion(int timeLimit){
   struct job * jobIterator = head;
   struct job * STTCJob = NULL;
 
   while(jobIterator != NULL){
-
+    // Pay attention only to jobs that are not completed yet, and have already arrived.
+    if(jobIterator->executionTimeRemaining > 0 && jobIterator->arrival <= timeLimit){
+      if(STTCJob == NULL) // Any valid job will do to begin with.
+        STTCJob = jobIterator;
+      else if(jobIterator->executionTimeRemaining < STTCJob->executionTimeRemaining){
+        STTCJob = jobIterator;
+      }
+    }
 
     jobIterator = jobIterator->next;
   }
@@ -140,7 +149,42 @@ struct job * findShortestJobToCompletion(int timeLimit){
 }
 
 void policy_STCF(struct job *head, int slice) {
-  
+  printf("---Execution trace with STCF:\n");
+  int currentTime = 0; // Initialize current time.
+
+  while(1){
+    struct job * nextJob = findShortestJobToCompletion(currentTime);
+
+    if(nextJob == NULL){ // No job was found, means there are no jobs available.
+      // Find when the next job arrives and skip time to there.
+      printf("t=%d processor is idling.\n", currentTime);
+      currentTime = findNextJobsTime();
+
+      // If no valid time is found, all jobs are complete.
+      if(currentTime == -1)
+        break;
+    }
+    else{
+      // If the job was found, run it for slice-time or till completion, whichever is shorter.
+      int timeToRun = min(nextJob->executionTimeRemaining, slice);
+
+      // If this job is running for the first time, set execution start time.
+      if(nextJob->executionStarted == -1)
+        nextJob->executionStarted = currentTime;
+
+      printf("t=%d: [Job %d] arrived at [%d], ran for: [%d]\n"
+              , currentTime, nextJob->id, nextJob->arrival, timeToRun);
+
+      currentTime += timeToRun;
+      nextJob->executionTimeRemaining -= timeToRun;
+
+      // If this job is fully complete, set execution end time.
+      if(nextJob->executionTimeRemaining == 0)
+        nextJob->executionEnded = currentTime;
+    }
+  }
+
+  printf("---End of execution widht STCF.\n");
 
   return;
 }
@@ -209,12 +253,12 @@ int main(int argc, char **argv) {
   // the start of a linked-list of jobs, i.e., the job list 
   read_workload_file(workload);
 
-  if (strcmp(policy, "STCF") == 0  || strcmp(policy, "stct") == 0) {
+  if (strcmp(policy, "STCF") == 0  || strcmp(policy, "stcf") == 0) {
     policy_STCF(head, slice);
     if (analysis) {
-      printf("Begin analyzing STCF:\n");
+      printf("\n---Begin analyzing STCF:\n");
       analyze(head);
-      printf("End analyzing STCF.\n");
+      printf("---End analyzing STCF.\n");
     }
     exit(EXIT_SUCCESS);
   }
@@ -222,9 +266,9 @@ int main(int argc, char **argv) {
   if (strcmp(policy, "RR") == 0  || strcmp(policy, "rr") == 0) {
     policy_RR(head, slice);
     if (analysis) {
-      printf("Begin analyzing RR:\n");
+      printf("\n---Begin analyzing RR:\n");
       analyze(head);
-      printf("End analyzing RR.\n");
+      printf("---End analyzing RR.\n");
     }
     exit(EXIT_SUCCESS);
   }
@@ -232,9 +276,9 @@ int main(int argc, char **argv) {
   if (strcmp(policy, "LT") == 0  || strcmp(policy, "lt") == 0) {
     policy_RR(head, slice);
     if (analysis) {
-      printf("Begin analyzing LT:\n");
+      printf("\n---Begin analyzing LT:\n");
       analyze(head);
-      printf("End analyzing LT.\n");
+      printf("---End analyzing LT.\n");
     }
     exit(EXIT_SUCCESS);
   }
