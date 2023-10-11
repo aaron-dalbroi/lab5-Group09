@@ -330,7 +330,7 @@ void policy_LT(struct job * head, int slice){
     }
   }
 
-  printf("---End of execution widht LT.\n");
+  printf("---End of execution with LT.\n");
 
   return;
 }
