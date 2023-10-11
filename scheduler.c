@@ -127,6 +127,19 @@ int findNextJobsTime(){
 
   return nextJobsTime;
 }
+/*Checks entire list of tasks to see if any havent been completed yet.*/
+int jobs_left(){              
+  struct job* iterator = head;
+
+  while(iterator != NULL){
+    
+    if(iterator->executionTimeRemaining != 0)
+      return 1;
+    iterator = iterator->next;
+  }
+
+
+}
 
 /*Finds the job that has shortest time to completion from available, incomplete jobs.
   Returns the pointer to the shortest job or NULL, if no jobs are available.*/
@@ -192,7 +205,55 @@ void policy_STCF(struct job *head, int slice) {
 }
 
 void policy_RR(struct job * head, int slice){
-  // TODO: Fill this in as well.
+
+  printf("Execution trace with RR:\n");
+
+  int current_time = findNextJobsTime(); // Finds the time of the first task to complete
+  int ran_for = 0;                       // Holds how long each job ran for in a slice for later printing
+
+  
+  while(jobs_left()){   //While we still have jobs left, continue to search the linked list
+  
+    struct job* jobIterator = head; // iterator is reset to head at the end of each cycle
+
+    while((jobIterator != NULL) && (jobIterator->arrival <= current_time)){    //Check all jobs that have arrived
+
+      int no_job_ran = 1;
+
+      if(jobIterator->executionTimeRemaining > 0){  // Process job if it is not completed yet
+      
+        if(jobIterator->executionStarted == -1)         //If it is the first time running this job, set start of execution
+          jobIterator->executionStarted = current_time;
+        
+        if(jobIterator->executionTimeRemaining > slice){  //If job has time great than slice remaining, work the whole slice
+          jobIterator->executionTimeRemaining -= slice;
+          current_time += slice;
+          ran_for = slice;
+          no_job_ran = 0;
+        
+        }
+        else{
+          current_time += jobIterator->executionTimeRemaining; // Otherwise work part of the slice   
+          ran_for = jobIterator->executionTimeRemaining;  
+          jobIterator->executionTimeRemaining = 0;
+          no_job_ran = 0;
+          jobIterator->executionEnded = current_time; // Task is ended once time remaining is 0
+          
+        }
+
+
+
+        printf("t=%d: [Job %d] arrived at [%d], ran for: [%d]\n",
+        current_time-ran_for, jobIterator->id, jobIterator->arrival, ran_for);
+
+        if(no_job_ran){                     //If no job is available to run, move to time of next job
+          current_time = findNextJobsTime();
+        }
+      }
+        jobIterator = jobIterator->next;
+    }
+}
+printf("End of execution with RR.\n");
 }
 
 /*Goes through the job list and adds up the ticket values of all active jobs.*/
@@ -269,7 +330,7 @@ void policy_LT(struct job * head, int slice){
     }
   }
 
-  printf("---End of execution widht LT.\n");
+  printf("---End of execution with LT.\n");
 
   return;
 }
