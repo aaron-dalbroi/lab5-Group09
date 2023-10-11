@@ -200,6 +200,7 @@ void policy_LT(struct job * head, int slice){
 void analyze(struct job * head){
   float averageResponseTime = 0;
   float averageTurnaroundTime = 0;
+  float averageWaitTime = 0;
   int numJobs = 0;
   
   struct job * jobIterator = head;
@@ -209,19 +210,22 @@ void analyze(struct job * head){
     numJobs++;
     int responseTime = jobIterator->executionStarted - jobIterator->arrival;
     int turnaroundTime = jobIterator->executionEnded - jobIterator->arrival;
+    int waitTime = jobIterator->executionEnded - jobIterator->arrival - jobIterator->length;
 
     averageResponseTime += responseTime;
     averageTurnaroundTime += turnaroundTime;
+    averageWaitTime += waitTime;
 
-    printf("Job %d -- Response time: %d Turnaround: %d Wait: %d\n",jobIterator->id , responseTime, turnaroundTime, responseTime);
+    printf("Job %d -- Response time: %d Turnaround: %d Wait: %d\n",jobIterator->id , responseTime, turnaroundTime, waitTime);
 
     jobIterator = jobIterator->next;
   }
 
   averageResponseTime /= numJobs;
   averageTurnaroundTime /= numJobs;
+  averageWaitTime /= numJobs;
 
-  printf("Average -- Response: %.2f Turnaround %.2f Wait %.2f\n", averageResponseTime, averageTurnaroundTime, averageResponseTime);
+  printf("Average -- Response: %.2f Turnaround %.2f Wait %.2f\n", averageResponseTime, averageTurnaroundTime, averageWaitTime);
   
   return;
 }
