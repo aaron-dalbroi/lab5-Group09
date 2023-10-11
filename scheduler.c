@@ -5,6 +5,8 @@
 #include <string.h>
 #include <limits.h>
 #include "job.h"
+#include <stdio.h>
+#include <time.h>
 
 //This is the start of our linked list of jobs, i.e., the job list
 struct job *head = NULL;
@@ -193,13 +195,89 @@ void policy_RR(struct job * head, int slice){
   // TODO: Fill this in as well.
 }
 
+/*Goes through the job list and adds up the ticket values of all active jobs.*/
+int getActiveTickets(struct job * head, int timeLimit){
+  struct job * jobIterator = head;
+  int totalTickets = 0;
+
+  while(jobIterator != NULL){
+    if(jobIterator->arrival <= timeLimit && jobIterator->executionTimeRemaining > 0){
+      totalTickets += jobIterator->tickets;
+    }
+
+    jobIterator = jobIterator->next;
+  }
+
+  return totalTickets;
+}
+
 void policy_LT(struct job * head, int slice){
-  // TODO: Fill this in as well.
+  printf("---Execution trace with LT:\n");
+  int currentTime = 0; // Initialize current time.
+  srand(time(NULL)); // Seed randomizer.
+
+  while(1){
+    printJobs;
+
+    // Find total number of tickets.
+    int totalTickets = getActiveTickets(head, currentTime);
+
+    if(totalTickets == 0){ // Total tickets == 0 means that no jobs are available.
+      // Find when the next job arrives and skip time to there.
+      printf("t=%d processor is idling.\n", currentTime);
+      currentTime = findNextJobsTime();
+
+      // If no valid time is found, all jobs are complete.
+      if(currentTime == -1)
+        break;
+    }
+    else{
+      // Spin the lottery wheel.
+      int winningTicket = rand() % (totalTickets + 1);
+
+      // Find which job won the lottery.
+      struct job * winner = NULL;
+      struct job * jobIterator = head;
+      int ticketRange  = 0;
+      while(jobIterator != NULL){ // Go through the jobs.
+        if(jobIterator->arrival <= currentTime && jobIterator->executionTimeRemaining > 0){ // If the job is active.
+          ticketRange += jobIterator->tickets; // Find upper limit of this job's tickets.
+          if(winningTicket < ticketRange){ // If ticket belongs to this job.
+            winner = jobIterator;
+            break;
+          }
+        }
+        jobIterator = jobIterator->next;
+      }
+
+      // If the job was found, run it for slice-time or till completion, whichever is shorter.
+      int timeToRun = min(winner->executionTimeRemaining, slice);
+
+      // If this job is running for the first time, set execution start time.
+      if(winner->executionStarted == -1)
+        winner->executionStarted = currentTime;
+
+      printf("t=%d: [Job %d] arrived at [%d], ran for: [%d]\n"
+              , currentTime, winner->id, winner->arrival, timeToRun);
+
+      currentTime += timeToRun;
+      winner->executionTimeRemaining -= timeToRun;
+
+      // If this job is fully complete, set execution end time.
+      if(winner->executionTimeRemaining == 0)
+        winner->executionEnded = currentTime;
+    }
+  }
+
+  printf("---End of execution widht LT.\n");
+
+  return;
 }
 
 void analyze(struct job * head){
   float averageResponseTime = 0;
   float averageTurnaroundTime = 0;
+  float averageWaitTime = 0;
   int numJobs = 0;
   
   struct job * jobIterator = head;
@@ -209,19 +287,22 @@ void analyze(struct job * head){
     numJobs++;
     int responseTime = jobIterator->executionStarted - jobIterator->arrival;
     int turnaroundTime = jobIterator->executionEnded - jobIterator->arrival;
+    int waitTime = jobIterator->executionEnded - jobIterator->arrival - jobIterator->length;
 
     averageResponseTime += responseTime;
     averageTurnaroundTime += turnaroundTime;
+    averageWaitTime += waitTime;
 
-    printf("Job %d -- Response time: %d Turnaround: %d Wait: %d\n",jobIterator->id , responseTime, turnaroundTime, responseTime);
+    printf("Job %d -- Response time: %d Turnaround: %d Wait: %d\n",jobIterator->id , responseTime, turnaroundTime, waitTime);
 
     jobIterator = jobIterator->next;
   }
 
   averageResponseTime /= numJobs;
   averageTurnaroundTime /= numJobs;
+  averageWaitTime /= numJobs;
 
-  printf("Average -- Response: %.2f Turnaround %.2f Wait %.2f\n", averageResponseTime, averageTurnaroundTime, averageResponseTime);
+  printf("Average -- Response: %.2f Turnaround %.2f Wait %.2f\n", averageResponseTime, averageTurnaroundTime, averageWaitTime);
   
   return;
 }
@@ -274,7 +355,7 @@ int main(int argc, char **argv) {
   }
 
   if (strcmp(policy, "LT") == 0  || strcmp(policy, "lt") == 0) {
-    policy_RR(head, slice);
+    policy_LT(head, slice);
     if (analysis) {
       printf("\n---Begin analyzing LT:\n");
       analyze(head);
