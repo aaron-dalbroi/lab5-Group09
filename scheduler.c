@@ -221,7 +221,10 @@ void policy_RR(struct job * head, int slice){
       int no_job_ran = 1;
 
       if(jobIterator->executionTimeRemaining > 0){  // Process job if it is not completed yet
-
+      
+        if(jobIterator->executionStarted == -1)         //If it is the first time running this job, set start of execution
+          jobIterator->executionStarted = current_time;
+        
         if(jobIterator->executionTimeRemaining > slice){  //If job has time great than slice remaining, work the whole slice
           jobIterator->executionTimeRemaining -= slice;
           current_time += slice;
@@ -234,8 +237,12 @@ void policy_RR(struct job * head, int slice){
           ran_for = jobIterator->executionTimeRemaining;  
           jobIterator->executionTimeRemaining = 0;
           no_job_ran = 0;
+          jobIterator->executionEnded = current_time; // Task is ended once time remaining is 0
           
         }
+
+
+
         printf("t=%d: [Job %d] arrived at [%d], ran for: [%d]\n",
         current_time-ran_for, jobIterator->id, jobIterator->arrival, ran_for);
 
